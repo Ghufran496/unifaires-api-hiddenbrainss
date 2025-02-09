@@ -1,0 +1,14 @@
+[
+  {
+    "title": "admin",
+    "description": "admin permissions"
+  },
+  {
+    "title": "business",
+    "description": "business permissions"
+  },
+  {
+    "title": "user",
+    "description": "user permission"
+  }
+]

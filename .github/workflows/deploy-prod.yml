@@ -1,0 +1,48 @@
+name: CI/CD for Unifaires to K8s
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it.
+      - name: Checkout production branch
+        uses: actions/checkout@main
+        with:
+          ref: 'production'
+
+      # Install doctl.
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      # Build a Docker image of your application in your registry and tag the image with the $GITHUB_SHA.
+      - name: Build container image
+        run: docker build -t ${{ secrets.REGISTRY_NAME }}/unifaires-api-prod:$(echo $GITHUB_SHA | head -c7) .
+
+      # Login
+      - name: Log in to DigitalOcean Container Registry with short-lived credentials
+        run: doctl registry login --expiry-seconds 1200
+
+      # Push image to DO
+      - name: Push image to DigitalOcean Container Registry
+        run: docker push ${{ secrets.REGISTRY_NAME }}/unifaires-api-prod:$(echo $GITHUB_SHA | head -c7)
+
+      # Deploy to Digital Ocean Kubernetes.
+      - name: Update deployment file
+        run: TAG=$(echo $GITHUB_SHA | head -c7) && sed -i 's|<IMAGE>|${{ secrets.REGISTRY_NAME }}/unifaires-api-prod:'${TAG}'|' $GITHUB_WORKSPACE/k8s/deployment-prod.yaml
+
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ secrets.CLUSTER_NAME }}
+
+      - name: Deploy to DigitalOcean Kubernetes
+        run: kubectl apply -f $GITHUB_WORKSPACE/k8s/deployment-prod.yaml
+
+      - name: Verify deployment
+        run: kubectl rollout status -n unifaires-prod deployment/unifaires-api-prod

@@ -1,0 +1,141 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unifaires-api-prod
+  namespace: unifaires-prod
+  labels:
+    app: unifaires-api-prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: unifaires-api-prod
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      namespace: unifaires-prod
+      labels:
+        app: unifaires-api-prod
+        app.kubernetes.io/name: unifaires-api-prod
+    spec:
+      containers:
+        - name: unifaires-api-prod
+          image: <IMAGE>
+          resources:
+            requests:
+              cpu: "500m"
+          ports:
+          - containerPort: 5000
+          envFrom:
+          - secretRef:
+              name: unifaires-api-prod
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: unifaires-api-prod-service
+  namespace: unifaires-prod
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 5000
+  selector:
+    app: unifaires-api-prod
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: unifaires-api-prod
+  namespace: unifaires-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: unifaires-api-prod
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: unifaires-api-prod
+  namespace: unifaires-prod
+  annotations:
+    cert-manager.io/issuer: letsencrypt-nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+    nginx.ingress.kubernetes.io/forwarded-for-header: "X-Forwarded-For"
+    nginx.ingress.kubernetes.io/enable-real-ip: "true"
+status:
+  loadBalancer:
+    ingress:
+      - hostname: api.tryunifaires.com
+spec:
+  tls:
+    - hosts:
+      - api.tryunifaires.com
+      - admin.tryunifaires.com
+      - tryunifaires.com
+      secretName: letsencrypt-nginx
+  ingressClassName: nginx
+  rules:
+  - host: api.tryunifaires.com
+    http:
+        paths:
+        - pathType: Prefix
+          path: /
+          backend:
+            service:
+              name: unifaires-api-prod-service
+              port:
+                number: 80
+  - host: admin.tryunifaires.com
+    http:
+        paths:
+        - pathType: Prefix
+          path: /
+          backend:
+            service:
+              name: unifaires-admin-prod-service
+              port:
+                number: 80
+  - host: tryunifaires.com
+    http:
+        paths:
+        - pathType: Prefix
+          path: /
+          backend:
+            service:
+              name: unifaires-front-prod-service
+              port:
+                number: 80
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: letsencrypt-nginx
+  namespace: unifaires-prod
+spec:
+  acme:
+    email: ben.bill8@gmail.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-nginx-private-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx

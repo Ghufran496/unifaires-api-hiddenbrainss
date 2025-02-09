@@ -1,0 +1,53 @@
+{
+  "name": "unifairs-app",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npx sequelize-cli db:migrate && node ./bin/www",
+    "dev": "npx sequelize-cli db:migrate && nodemon ./bin/www",
+    "test": "jest",
+    "migrate:up": "npx sequelize-cli db:migrate",
+    "migrate:undo": "npx sequelize-cli db:migrate:undo"
+  },
+  "dependencies": {
+    "@elasticemail/elasticemail-client": "^4.0.23",
+    "@joi/date": "^2.1.0",
+    "@sendgrid/mail": "^8.1.0",
+    "axios": "^1.4.0",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.36.4",
+    "cookie-parser": "~1.4.4",
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.11",
+    "debug": "~2.6.9",
+    "dotenv": "^16.0.1",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "flutterwave-node-v3": "^1.1.7",
+    "geoip-lite": "^1.4.9",
+    "http-errors": "~1.6.3",
+    "joi": "^17.6.0",
+    "jsonwebtoken": "^9.0.0",
+    "linkedin-jobs-api": "^1.0.0",
+    "morgan": "~1.9.1",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^2.3.3",
+    "n-digit-token": "^2.2.0",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^2.0.0",
+    "nodemailer": "^6.9.13",
+    "nodemon": "^2.0.22",
+    "papaparse": "^5.4.1",
+    "request-ip": "^3.3.0",
+    "sequelize": "^6.21.3",
+    "sequelize-hierarchy": "^2.0.4",
+    "sequelize-hierarchy-next": "^1.0.0",
+    "sha1": "^1.1.1",
+    "slugify": "^1.6.6",
+    "socket.io": "^4.7.5",
+    "stripe": "^12.5.0"
+  },
+  "devDependencies": {
+    "jest": "^28.1.3"
+  }
+}

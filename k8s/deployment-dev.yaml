@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unifaires-api-dev
+  namespace: unifaires-dev
+  labels:
+    app: unifaires-api-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unifaires-api-dev
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      namespace: unifaires-dev
+      labels:
+        app: unifaires-api-dev
+        app.kubernetes.io/name: unifaires-api-dev
+    spec:
+      containers:
+        - name: unifaires-api-dev
+          image: <IMAGE>
+          ports:
+          - containerPort: 5000
+          envFrom:
+          - secretRef:
+              name: unifaires-api-dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: unifaires-api-dev-service
+  namespace: unifaires-dev
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 5000
+  selector:
+    app: unifaires-api-dev
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: unifaires-api-dev
+  namespace: unifaires-dev
+  annotations:
+    cert-manager.io/issuer: letsencrypt-nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+    nginx.ingress.kubernetes.io/forwarded-for-header: "X-Forwarded-For"
+    nginx.ingress.kubernetes.io/enable-real-ip: "true"
+status:
+  loadBalancer:
+    ingress:
+      - hostname: dev-api.tryunifaires.com
+spec:
+  tls:
+    - hosts:
+      - dev-api.tryunifaires.com
+      - dev-admin.tryunifaires.com
+      - dev-front.tryunifaires.com
+      secretName: letsencrypt-nginx
+  ingressClassName: nginx
+  rules:
+  - host: dev-api.tryunifaires.com
+    http:
+        paths:
+        - pathType: Prefix
+          path: /
+          backend:
+            service:
+              name: unifaires-api-dev-service
+              port:
+                number: 80
+  - host: dev-admin.tryunifaires.com
+    http:
+        paths:
+        - pathType: Prefix
+          path: /
+          backend:
+            service:
+              name: unifaires-admin-dev-service
+              port:
+                number: 80
+  - host: dev-front.tryunifaires.com
+    http:
+        paths:
+        - pathType: Prefix
+          path: /
+          backend:
+            service:
+              name: unifaires-front-dev-service
+              port:
+                number: 80
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: letsencrypt-nginx
+  namespace: unifaires-dev
+spec:
+  acme:
+    email: nasiruddin.saiyed@hiddenbrains.in
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-nginx-private-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
