@@ -1,4 +1,5 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY); // Your Stripe secret key
+const purchasedCourse = require("../models/PurchasedCourse");
 
 // Service method for creating a Stripe session
 const createStripeSessionService = async (
@@ -7,10 +8,11 @@ const createStripeSessionService = async (
   paymentMethod,
   user,
   selectedGateway,
-  redirectUrl
+  redirectUrl,
+  courseId,
+  paymentSession
 ) => {
   try {
-
     const bankPaymentMethods = {
       "Stripe Germany Bank": ["sepa_debit", "sofort", "giropay"], // Germany
       "Stripe France Bank": ["sepa_debit"], // France
@@ -42,6 +44,8 @@ const createStripeSessionService = async (
       cancel_url: `${process.env.FRONT_APP_URL}${redirectUrl}`,
       metadata: {
         userId: user?.userId,
+        courseId: courseId,
+        paymentSession: paymentSession,
       },
     });
 
@@ -71,7 +75,25 @@ const handlePaymentCallbackService = async (session_id) => {
   }
 };
 
+const getUserPurchasedCoursesService = async (userId) => {
+  try {
+    const purchasedCourses = await purchasedCourse.findAll({
+      where: { userId },
+      attributes: ["courseId"], // Only fetch course IDs
+    });
+
+    // Extract course IDs from the result
+    const courseIds = purchasedCourses.map((course) => course.courseId);
+
+    return courseIds;
+  } catch (error) {
+    console.error("Error fetching purchased courses:", error);
+    throw new Error("Error fetching purchased courses");
+  }
+};
+
 module.exports = {
   createStripeSessionService,
   handlePaymentCallbackService,
+  getUserPurchasedCoursesService,
 };

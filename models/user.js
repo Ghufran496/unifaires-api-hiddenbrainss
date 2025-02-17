@@ -5,6 +5,8 @@ const Role = require("./role");
 const UsersSkills = require("./users.skills");
 const Skills = require("./skills");
 
+const purchasedCourse = require("./PurchasedCourse");
+
 class User extends Model {}
 
 User.init(
@@ -141,6 +143,13 @@ User.init(
 
 Role.hasMany(User);
 User.belongsTo(Role);
+
+User.associate = (models) => {
+  User.hasMany(purchasedCourse, {
+    foreignKey: "userId",
+    as: "purchasedCourses",
+  });
+};
 
 // bring the skills here
 User.belongsToMany(Skills, {

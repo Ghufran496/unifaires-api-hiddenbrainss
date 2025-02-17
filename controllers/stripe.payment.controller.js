@@ -2,6 +2,7 @@ const { useAsync } = require("../core");
 const { JParser } = require("../core").utils;
 const stripeServices = require("../services/stripe.payment.service"); // Import the Stripe services
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY); // Your Stripe secret key
+const purchasedCourse = require("../models/PurchasedCourse");
 
 // Create Stripe Checkout Session
 exports.createStripeSession = useAsync(async (req, res, next) => {
@@ -13,6 +14,8 @@ exports.createStripeSession = useAsync(async (req, res, next) => {
       user,
       selectedGateway,
       redirectUrl,
+      courseId,
+      paymentSession,
     } = req.body;
 
     // Call service to create Stripe session
@@ -22,12 +25,33 @@ exports.createStripeSession = useAsync(async (req, res, next) => {
       paymentMethod,
       user,
       selectedGateway,
-      redirectUrl
+      redirectUrl,
+      courseId,
+      paymentSession
     );
 
     return res
       .status(200)
       .json(JParser("Stripe session created", true, { url: sessionUrl }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// New controller method to get purchased courses by user ID
+exports.getUserPurchasedCourses = useAsync(async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // Call service to fetch purchased courses
+    const purchasedCourses =
+      await stripeServices.getUserPurchasedCoursesService(userId);
+
+    return res.status(200).json(
+      JParser("Purchased courses fetched successfully", true, {
+        purchasedCourses,
+      })
+    );
   } catch (error) {
     next(error);
   }
@@ -76,8 +100,40 @@ exports.handleWebhook = async (req, res) => {
   // Handle the event type
   switch (event.type) {
     case "checkout.session.completed":
-      console.log("Payment Successful:", event.data.object);
-      // Call your service to update database, mark order as paid, etc.
+      const session = event.data.object;
+      const { userId, courseId, paymentSession } = session.metadata;
+      if (paymentSession === "payFunds") {
+        if (!userId || !courseId) {
+          console.error("Missing userId or courseId in session metadata");
+          return res.status(400).send("Missing userId or courseId");
+        }
+
+        try {
+          // Check if the course is already purchased by the user
+          const existingPurchase = await purchasedCourse.findOne({
+            where: { userId, courseId },
+          });
+
+          if (!existingPurchase) {
+            // Add the course to the purchased_courses table
+            await purchasedCourse.create({ userId, courseId });
+            console.log("Course added to user's purchased courses:", courseId);
+          } else {
+            console.log(
+              "Course already exists in user's purchased courses:",
+              courseId
+            );
+          }
+
+          return res.status(200).send("Webhook processed successfully");
+        } catch (error) {
+          console.error("Error updating user's purchased courses:", error);
+          return res.status(500).send("Internal Server Error");
+        }
+      } else if (paymentSession === "transferFunds") {
+      } else {
+      }
+
       break;
 
     case "payment_intent.succeeded":
