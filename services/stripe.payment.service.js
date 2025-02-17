@@ -10,7 +10,8 @@ const createStripeSessionService = async (
   selectedGateway,
   redirectUrl,
   courseId,
-  paymentSession
+  paymentSession,
+  user_Id
 ) => {
   try {
     const bankPaymentMethods = {
@@ -46,6 +47,8 @@ const createStripeSessionService = async (
         userId: user?.id,
         courseId: courseId,
         paymentSession: paymentSession,
+        amount: amount,
+        user_Id: user_Id,
       },
     });
 

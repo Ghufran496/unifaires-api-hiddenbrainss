@@ -8,6 +8,7 @@ const { JParser } = require("../core/core.utils");
 const roleService = require("../services/role.service");
 const { calculatePagination } = require("../helpers/paginate.helper");
 const businessServices = require("../services/business.services");
+const User = require("../models/user");
 
 exports.index = useAsync(async function (req, res, next) {
   try {
@@ -322,6 +323,81 @@ exports.getSwitchUserDatas = useAsync(async (req, res, next) => {
         .json(JParser("ok-response", true, { business: userAcc }));
     }
     return res.status(404).json(JParser("Account not found", false, null));
+  } catch (error) {
+    next(error);
+  }
+});
+exports.update_balance = useAsync(async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { balance } = req.body;
+
+    const user = await usersServices.findOne(id);
+
+    if (!user) {
+      return res.status(404).json(JParser("User not found", false, null));
+    }
+
+    const update = await usersServices.updateUserBalance(id, balance);
+    if (!update) {
+      return res
+        .status(500)
+        .json(JParser("Failed to update balance", false, null));
+    }
+
+    return res
+      .status(200)
+      .json(JParser("Balance updated successfully", true, { id, balance }));
+  } catch (error) {
+    next(error);
+  }
+});
+exports.update_balance_by_email = useAsync(async (req, res, next) => {
+  try {
+    const { userId, email, amount } = req.body;
+    const sendUser = await User.findOne({
+      where: { email },
+    });
+    const currentUser = await User.findOne({
+      where: { id: userId },
+    });
+    console.log(sendUser, "sendUser");
+    // const currentUser = await usersServices.findOne({ userId });
+    if (!sendUser) {
+      return res.status(404).json(JParser("Send User not found", false, null));
+    }
+    console.log(currentUser, "currentUser");
+    if (!currentUser) {
+      return res
+        .status(404)
+        .json(JParser("Current User not found", false, null));
+    }
+    const SendUserBalance = parseFloat(sendUser.dataValues.balance) + amount;
+    console.log(SendUserBalance, "SendUserBalance");
+    const CurrentUserAmount = parseFloat(sendUser.dataValues.balance) - amount;
+    const update = await usersServices.updateUserBalance(
+      sendUser.dataValues.id,
+      SendUserBalance
+    );
+
+    if (!update) {
+      return res
+        .status(500)
+        .json(JParser("Failed to update balance", false, null));
+    }
+    const updateCurrent = await usersServices.updateUserBalance(
+      currentUser.dataValues.id,
+      CurrentUserAmount
+    );
+    if (!updateCurrent) {
+      return res
+        .status(500)
+        .json(JParser("Failed to update balance", false, null));
+    }
+
+    return res
+      .status(200)
+      .json(JParser("Balance updated successfully", true, { email, amount }));
   } catch (error) {
     next(error);
   }

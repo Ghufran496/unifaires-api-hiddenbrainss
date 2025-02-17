@@ -3,6 +3,7 @@ const { JParser } = require("../core").utils;
 const stripeServices = require("../services/stripe.payment.service"); // Import the Stripe services
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY); // Your Stripe secret key
 const purchasedCourse = require("../models/PurchasedCourse");
+const usersServices = require("../services/users.services");
 
 // Create Stripe Checkout Session
 exports.createStripeSession = useAsync(async (req, res, next) => {
@@ -16,6 +17,7 @@ exports.createStripeSession = useAsync(async (req, res, next) => {
       redirectUrl,
       courseId,
       paymentSession,
+      user_Id,
     } = req.body;
 
     // Call service to create Stripe session
@@ -27,7 +29,8 @@ exports.createStripeSession = useAsync(async (req, res, next) => {
       selectedGateway,
       redirectUrl,
       courseId,
-      paymentSession
+      paymentSession,
+      user_Id
     );
 
     return res
@@ -101,7 +104,8 @@ exports.handleWebhook = async (req, res) => {
   switch (event.type) {
     case "checkout.session.completed":
       const session = event.data.object;
-      const { userId, courseId, paymentSession } = session.metadata;
+      const { userId, courseId, paymentSession, amount, user_Id } =
+        session.metadata;
       if (paymentSession === "payFunds") {
         if (!userId || !courseId) {
           console.error("Missing userId or courseId in session metadata");
@@ -131,7 +135,31 @@ exports.handleWebhook = async (req, res) => {
           return res.status(500).send("Internal Server Error");
         }
       } else if (paymentSession === "transferFunds") {
+        console.log("LALALALALALALAL");
       } else {
+        console.log(user_Id, "Idddddddd");
+        if (user_Id) {
+          try {
+            const CurrentUserBalance = await usersServices.getUserBalanceById(
+              id
+            );
+            const total = CurrentUserBalance + amount;
+
+            const update = await usersServices.updateUserBalance(
+              user_Id,
+              total
+            );
+            if (!update) {
+              console.error("Failed to update balance");
+              return res.status(500).send("Failed to update balance");
+            }
+            console.log("Balance updated successfully");
+            return res.status(200).send("Balance updated successfully");
+          } catch (error) {
+            console.error("Error updating balance:", error);
+            return res.status(500).send("Internal Server Error");
+          }
+        }
       }
 
       break;

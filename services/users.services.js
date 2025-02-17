@@ -117,6 +117,14 @@ class UsersServices {
     });
   }
 
+  async findOneByEmail(email, options = {}) {
+    return User.findOne({
+      where: { email },
+      include: getUserIncludes(),
+      ...options,
+    });
+  }
+
   async findBy(by, options = {}) {
     return User.scope("withPassword").findOne({
       where: by,
@@ -306,6 +314,30 @@ class UsersServices {
       defaults: value,
       ...options,
     });
+  }
+  async updateUserBalance(id, balance, options = {}) {
+    return await User.update({ balance }, { where: { id }, ...options });
+  }
+
+  async updateUserBalanceByEmail(email, balance, options = {}) {
+    return await User.update({ balance }, { where: { email }, ...options });
+  }
+
+  async getUserBalanceByEmail(email, options = {}) {
+    const user = await User.findOne({
+      where: { email },
+      attributes: ["balance"],
+      ...options,
+    });
+    return user ? user.balance : null;
+  }
+  async getUserBalanceById(id, options = {}) {
+    const user = await User.findOne({
+      where: { id },
+      attributes: ["balance"],
+      ...options,
+    });
+    return user ? user.balance : null;
   }
 }
 
