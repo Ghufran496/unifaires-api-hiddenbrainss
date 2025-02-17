@@ -6,6 +6,7 @@ let logger = require("morgan");
 let errorHandler = require("./middleware/middleware.error");
 let { errorHandle } = require("./core");
 
+const bodyParser = require("body-parser");
 let app = express();
 
 global.fetch = require("node-fetch");
@@ -33,9 +34,10 @@ app.use(function (req, res, next) {
 });
 
 app.use(logger("dev"));
+app.use(bodyParser.json({ verify: (req, res, buf) => (req.rawBody = buf) }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: true }));
+// app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 

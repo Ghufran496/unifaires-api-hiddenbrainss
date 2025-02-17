@@ -142,6 +142,7 @@ module.exports = function (app) {
   const refunds = require("../routes/refund.routes");
   const earnings = require("../routes/earnings.routes");
 
+  const stripePaymentRoutes = require("../routes/stripe.payment.routes");
   /**
    * list of routes
    */
@@ -151,6 +152,9 @@ module.exports = function (app) {
   app.use("/api/v1/auth", authRouter);
   app.use("/api/v1/user", usersRouter);
   app.use("/api/v1/admin", adminRouter);
+
+  //CoursePayment Route
+  app.use("/api/v1/payment", stripePaymentRoutes);
 
   //countries states and cities
   ///api/v1/csc -- gets countries

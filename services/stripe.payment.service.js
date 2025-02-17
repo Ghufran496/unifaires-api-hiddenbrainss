@@ -1,0 +1,77 @@
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY); // Your Stripe secret key
+
+// Service method for creating a Stripe session
+const createStripeSessionService = async (
+  amount,
+  currency,
+  paymentMethod,
+  user,
+  selectedGateway,
+  redirectUrl
+) => {
+  try {
+
+    const bankPaymentMethods = {
+      "Stripe Germany Bank": ["sepa_debit", "sofort", "giropay"], // Germany
+      "Stripe France Bank": ["sepa_debit"], // France
+      "Stripe USA Bank": ["us_bank_account"], // USA (ACH Direct Debit)
+      "Stripe Canada Bank": ["acss_debit"], // Canada (Interac, PADs)
+      "Stripe Brazil Bank": ["boleto", "pix"], // Brazil
+    };
+
+    const allowedMethods =
+      paymentMethod === "card" ? ["card"] : bankPaymentMethods[currency?.bank];
+
+    console.log("allowedMethods", allowedMethods);
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: allowedMethods,
+      line_items: [
+        {
+          price_data: {
+            currency: currency.currency || "USD",
+            product_data: {
+              name: "Course Payment",
+            },
+            unit_amount: amount * 100,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: `${process.env.FRONT_APP_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONT_APP_URL}${redirectUrl}`,
+      metadata: {
+        userId: user?.userId,
+      },
+    });
+
+    return session.url; // Return the session URL for redirecting
+  } catch (error) {
+    console.error("Error creating Stripe session:", error);
+    throw new Error("Error creating Stripe session");
+  }
+};
+
+// Service method for handling the Stripe payment callback
+const handlePaymentCallbackService = async (session_id) => {
+  try {
+    // Retrieve the session from Stripe
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (session.payment_status === "paid") {
+      // Payment was successful, handle success (e.g., update database)
+      return { success: true, session };
+    } else {
+      // Payment failed
+      return { success: false, session };
+    }
+  } catch (error) {
+    console.error("Error handling payment callback:", error);
+    throw new Error("Error handling payment callback");
+  }
+};
+
+module.exports = {
+  createStripeSessionService,
+  handlePaymentCallbackService,
+};
