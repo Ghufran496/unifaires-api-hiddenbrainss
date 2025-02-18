@@ -9,6 +9,7 @@ const roleService = require("../services/role.service");
 const { calculatePagination } = require("../helpers/paginate.helper");
 const businessServices = require("../services/business.services");
 const User = require("../models/user");
+const purchasedCourse = require("../models/PurchasedCourse");
 
 exports.index = useAsync(async function (req, res, next) {
   try {
@@ -329,27 +330,63 @@ exports.getSwitchUserDatas = useAsync(async (req, res, next) => {
 });
 exports.update_balance = useAsync(async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const { balance } = req.body;
+    const { balance, userId, courseId } = req.body;
 
-    const user = await usersServices.findOne(id);
+    if (!userId || !balance || !courseId) {
+      return res
+        .status(400)
+        .json(JParser("Missing required fields", false, null));
+    }
 
+    const user = await usersServices.findOne(userId);
     if (!user) {
       return res.status(404).json(JParser("User not found", false, null));
     }
 
-    const update = await usersServices.updateUserBalance(id, balance);
+    const update = await usersServices.updateUserBalance(userId, balance);
     if (!update) {
       return res
         .status(500)
         .json(JParser("Failed to update balance", false, null));
     }
 
+    let existingPurchase;
+    try {
+      existingPurchase = await purchasedCourse.findOne({
+        where: { userId, courseId },
+      });
+    } catch (error) {
+      console.error("Error checking purchased course:", error);
+      return res
+        .status(500)
+        .json(JParser("Database error while checking purchase", false, null));
+    }
+
+    if (!existingPurchase) {
+      try {
+        await purchasedCourse.create({ userId, courseId });
+        console.log("Course added to user's purchased courses:", courseId);
+      } catch (error) {
+        console.error("Error adding course to purchased courses:", error);
+        return res
+          .status(500)
+          .json(
+            JParser("Failed to add course to purchased courses", false, null)
+          );
+      }
+    } else {
+      console.log(
+        "Course already exists in user's purchased courses:",
+        courseId
+      );
+    }
+
     return res
       .status(200)
-      .json(JParser("Balance updated successfully", true, { id, balance }));
+      .json(JParser("Balance updated successfully", true, { userId, balance }));
   } catch (error) {
-    next(error);
+    console.error("Unexpected error in update_balance:", error);
+    return res.status(500).json(JParser("Internal Server Error", false, null));
   }
 });
 exports.update_balance_by_email = useAsync(async (req, res, next) => {

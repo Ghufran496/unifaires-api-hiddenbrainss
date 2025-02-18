@@ -19,6 +19,7 @@ const {
   update_username,
   getSwitchUserDatas,
   update_balance_by_email,
+  update_balance
 } = require("../controllers/users.controller");
 
 const { bodyParser, authorize } = require("../middleware/middleware.protects");
@@ -35,6 +36,8 @@ router.put(
 );
 
 router.put("/send-balance-by-email", update_balance_by_email);
+
+router.put("/update-balance-by-id", update_balance);
 
 router.get("/role", authorize(["admin", "business", "user"]), get_user_role);
 

@@ -95,8 +95,22 @@ const getUserPurchasedCoursesService = async (userId) => {
   }
 };
 
+const deletePurchasedCourseService = async (userId, courseId) => {
+  try {
+    const result = await purchasedCourse.destroy({
+      where: { userId, courseId },
+    });
+
+    return result; // Returns the number of rows deleted
+  } catch (error) {
+    console.error("Error deleting purchased course:", error);
+    throw new Error("Error deleting purchased course");
+  }
+};
+
 module.exports = {
   createStripeSessionService,
   handlePaymentCallbackService,
   getUserPurchasedCoursesService,
+  deletePurchasedCourseService,
 };

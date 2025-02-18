@@ -60,6 +60,28 @@ exports.getUserPurchasedCourses = useAsync(async (req, res, next) => {
   }
 });
 
+exports.deletePurchasedCourse = useAsync(async (req, res, next) => {
+  try {
+    const { userId, courseId } = req.params;
+
+    // Call service to delete the purchased course
+    const result = await stripeServices.deletePurchasedCourseService(
+      userId,
+      courseId
+    );
+
+    if (result) {
+      return res
+        .status(200)
+        .json(JParser("Purchased course deleted successfully", true));
+    } else {
+      return res.status(404).json(JParser("Purchased course not found", false));
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Handle Stripe Payment Callback
 exports.handlePaymentCallback = useAsync(async (req, res, next) => {
   try {
