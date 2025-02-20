@@ -41,7 +41,7 @@ const createStripeSessionService = async (
         },
       ],
       mode: "payment",
-      success_url: `${process.env.FRONT_APP_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.FRONT_APP_URL}/login?redirect=/user/payments`,
       cancel_url: `${process.env.FRONT_APP_URL}${redirectUrl}`,
       metadata: {
         userId: user?.id,

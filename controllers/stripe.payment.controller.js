@@ -162,11 +162,13 @@ exports.handleWebhook = async (req, res) => {
         console.log(user_Id, "Idddddddd");
         if (user_Id) {
           try {
+            console.log("inside");
             const CurrentUserBalance = await usersServices.getUserBalanceById(
-              id
+              user_Id
             );
-            const total = CurrentUserBalance + amount;
 
+            const total = parseFloat(CurrentUserBalance) + parseFloat(amount);
+            console.log("CurrentUserBalance", total);
             const update = await usersServices.updateUserBalance(
               user_Id,
               total

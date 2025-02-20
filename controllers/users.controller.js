@@ -409,9 +409,12 @@ exports.update_balance_by_email = useAsync(async (req, res, next) => {
         .status(404)
         .json(JParser("Current User not found", false, null));
     }
-    const SendUserBalance = parseFloat(sendUser.dataValues.balance) + amount;
+    const SendUserBalance =
+      parseFloat(sendUser.dataValues.balance) + parseFloat(amount);
     console.log(SendUserBalance, "SendUserBalance");
-    const CurrentUserAmount = parseFloat(sendUser.dataValues.balance) - amount;
+    const CurrentUserAmount =
+      parseFloat(currentUser.dataValues.balance) - parseFloat(amount);
+    console.log(CurrentUserAmount, "CurrentUserAmount");
     const update = await usersServices.updateUserBalance(
       sendUser.dataValues.id,
       SendUserBalance
