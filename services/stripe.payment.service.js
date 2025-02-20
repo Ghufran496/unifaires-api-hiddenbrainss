@@ -1,5 +1,7 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY); // Your Stripe secret key
 const purchasedCourse = require("../models/PurchasedCourse");
+const TransactionDetails = require("../models/transaction.details");
+
 
 // Service method for creating a Stripe session
 const createStripeSessionService = async (
@@ -11,7 +13,8 @@ const createStripeSessionService = async (
   redirectUrl,
   courseId,
   paymentSession,
-  user_Id
+  user_Id,
+  transactionDetails
 ) => {
   try {
     const bankPaymentMethods = {
@@ -26,6 +29,8 @@ const createStripeSessionService = async (
       paymentMethod === "card" ? ["card"] : bankPaymentMethods[currency?.bank];
 
     console.log("allowedMethods", allowedMethods);
+
+    const transactionDetailsString = JSON.stringify(transactionDetails);
     const session = await stripe.checkout.sessions.create({
       payment_method_types: allowedMethods,
       line_items: [
@@ -49,6 +54,7 @@ const createStripeSessionService = async (
         paymentSession: paymentSession,
         amount: amount,
         user_Id: user_Id,
+        transactionDetails: transactionDetailsString,
       },
     });
 
@@ -108,9 +114,35 @@ const deletePurchasedCourseService = async (userId, courseId) => {
   }
 };
 
+
+// Service to fetch transaction details by user ID
+const getUserTransactionDetailsService = async (userId) => {
+  try {
+    const transactionDetails = await TransactionDetails.findAll({
+      where: { userId },
+      attributes: [
+        "id",
+        "transactionAmount",
+        "paymentStatus",
+        "transactionId",
+        "transactionType",
+        "createdAt",
+        "updatedAt",
+        "billingAddress",
+      ], 
+    });
+
+    return transactionDetails;
+  } catch (error) {
+    console.error("Error fetching transaction details:", error);
+    throw new Error("Error fetching transaction details");
+  }
+};
+
 module.exports = {
   createStripeSessionService,
   handlePaymentCallbackService,
   getUserPurchasedCoursesService,
   deletePurchasedCourseService,
+  getUserTransactionDetailsService
 };

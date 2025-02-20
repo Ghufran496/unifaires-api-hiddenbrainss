@@ -5,7 +5,8 @@ const {
   handlePaymentCallback,
   handleWebhook,
   getUserPurchasedCourses,
-  deletePurchasedCourse
+  deletePurchasedCourse,
+  getUserTransactionDetails,
 } = require("../controllers/stripe.payment.controller"); // New controller for Stripe
 
 // Route to create a Stripe session for payment
@@ -21,5 +22,12 @@ router.post("/webhook", handleWebhook);
 router.get("/user/:userId/purchased-courses", getUserPurchasedCourses);
 
 // New route to delete a purchased course by user ID and course ID
-router.delete("/user/:userId/purchased-courses/:courseId", deletePurchasedCourse);
+router.delete(
+  "/user/:userId/purchased-courses/:courseId",
+  deletePurchasedCourse
+);
+
+// New route to get transaction details by user ID
+router.get("/user/:userId/transaction-details", getUserTransactionDetails);
+
 module.exports = router;
