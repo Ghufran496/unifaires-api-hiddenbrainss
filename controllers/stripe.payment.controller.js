@@ -155,13 +155,8 @@ exports.handleWebhook = async (req, res) => {
 
   // Extract session and metadata
   const session = event.data.object;
-  const {
-    userId,
-    courseId,
-    paymentSession,
-    amount,
-    transactionDetails,
-  } = session.metadata;
+  const { userId, courseId, paymentSession, amount, transactionDetails } =
+    session.metadata;
 
   // Validate metadata
   if (!session.metadata) {
@@ -179,7 +174,6 @@ exports.handleWebhook = async (req, res) => {
     billingAddress: pasrsedTransactionDetails?.billingAddress || null,
     transactionId: session.id,
   };
-
 
   // Handle event type
   try {
@@ -220,18 +214,18 @@ exports.handleWebhook = async (req, res) => {
             const CurrentUserBalance = await usersServices.getUserBalanceById(
               userId
             );
-
             const total = parseFloat(CurrentUserBalance) + parseFloat(amount);
-            console.log("CurrentUserBalance", total);
-            const update = await usersServices.updateUserBalance(
-              userId,
-              total
-            );
+            console.log(total, ":::total");
+            console.log(CurrentUserBalance, ":::CurrentUserBalance");
+            console.log(amount, ":::amount");
+
+            const update = await usersServices.updateUserBalance(userId, total);
             if (!update) {
               console.error("Failed to update balance");
               return res.status(500).send("Failed to update balance");
             }
             console.log("Balance updated successfully");
+            return res.status(200).send("Balance updated successfully");
           }
         }
         break;

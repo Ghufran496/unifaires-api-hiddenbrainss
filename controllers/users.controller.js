@@ -10,6 +10,7 @@ const { calculatePagination } = require("../helpers/paginate.helper");
 const businessServices = require("../services/business.services");
 const User = require("../models/user");
 const purchasedCourse = require("../models/PurchasedCourse");
+const TransactionDetails = require("../models/transaction.details");
 
 exports.index = useAsync(async function (req, res, next) {
   try {
@@ -390,20 +391,33 @@ exports.update_balance = useAsync(async (req, res, next) => {
   }
 });
 exports.update_balance_by_email = useAsync(async (req, res, next) => {
+  const { userId, email, amount } = req.body;
+  const billingAddress = {
+    streetAddress: "Send By Email",
+    city: "Send By Email",
+    stateProvince: "Send By Email",
+    postalCode: "Send By Email",
+    country: "Send By Email",
+  };
+  const transactionEntry = {
+    userId: userId,
+    transactionAmount: amount || 0,
+    transactionType: "",
+    paymentStatus: "",
+    billingAddress: billingAddress || null,
+    transactionId: "None",
+  };
   try {
-    const { userId, email, amount } = req.body;
     const sendUser = await User.findOne({
       where: { email },
     });
     const currentUser = await User.findOne({
       where: { id: userId },
     });
-    console.log(sendUser, "sendUser");
     // const currentUser = await usersServices.findOne({ userId });
     if (!sendUser) {
       return res.status(404).json(JParser("Send User not found", false, null));
     }
-    console.log(currentUser, "currentUser");
     if (!currentUser) {
       return res
         .status(404)
@@ -435,10 +449,21 @@ exports.update_balance_by_email = useAsync(async (req, res, next) => {
         .json(JParser("Failed to update balance", false, null));
     }
 
+    transactionEntry.paymentStatus = "success";
+    transactionEntry.transactionType = "sendfunds";
+
+    console.log(transactionEntry);
+    // Save transaction details
+    await TransactionDetails.create(transactionEntry);
+    // console.log("Transaction details saved successfully:", transactionEntry);
+
     return res
       .status(200)
       .json(JParser("Balance updated successfully", true, { email, amount }));
   } catch (error) {
+    transactionEntry.paymentStatus = "sendfunds";
+    transactionEntry.transactionType = "failed";
+    await TransactionDetails.create(transactionEntry);
     next(error);
   }
 });
