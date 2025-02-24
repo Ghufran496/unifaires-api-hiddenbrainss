@@ -1,12 +1,12 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY); // Your Stripe secret key
 const purchasedCourse = require("../models/PurchasedCourse");
+const Address = require("../models/address");
 const TransactionDetails = require("../models/transaction.details");
-
 
 // Service method for creating a Stripe session
 const createStripeSessionService = async (
   amount,
-  currency,
+  paymentGatewayswithcurrency,
   paymentMethod,
   user,
   selectedGateway,
@@ -26,7 +26,9 @@ const createStripeSessionService = async (
     };
 
     const allowedMethods =
-      paymentMethod === "card" ? ["card"] : bankPaymentMethods[currency?.bank];
+      paymentMethod === "card"
+        ? ["card"]
+        : bankPaymentMethods[paymentGatewayswithcurrency?.bank];
 
     console.log("allowedMethods", allowedMethods);
 
@@ -36,7 +38,7 @@ const createStripeSessionService = async (
       line_items: [
         {
           price_data: {
-            currency: currency.currency || "USD",
+            currency: paymentGatewayswithcurrency?.currency || "USD",
             product_data: {
               name: "Course Payment",
             },
@@ -114,6 +116,18 @@ const deletePurchasedCourseService = async (userId, courseId) => {
   }
 };
 
+const deleteAddressService = async (userId, id) => {
+  try {
+    const result = await Address.destroy({
+      where: { userId, id },
+    });
+
+    return result; // Returns the number of rows deleted
+  } catch (error) {
+    console.error("Error deleting purchased course:", error);
+    throw new Error("Error deleting purchased course");
+  }
+};
 
 // Service to fetch transaction details by user ID
 const getUserTransactionDetailsService = async (userId) => {
@@ -129,7 +143,7 @@ const getUserTransactionDetailsService = async (userId) => {
         "createdAt",
         "updatedAt",
         "billingAddress",
-      ], 
+      ],
     });
 
     return transactionDetails;
@@ -144,5 +158,6 @@ module.exports = {
   handlePaymentCallbackService,
   getUserPurchasedCoursesService,
   deletePurchasedCourseService,
-  getUserTransactionDetailsService
+  getUserTransactionDetailsService,
+  deleteAddressService,
 };

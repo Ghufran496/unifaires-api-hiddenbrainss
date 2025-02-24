@@ -11,7 +11,7 @@ exports.createStripeSession = useAsync(async (req, res, next) => {
   try {
     const {
       amount,
-      currency,
+      paymentGatewayswithcurrency,
       paymentMethod,
       user,
       selectedGateway,
@@ -25,7 +25,7 @@ exports.createStripeSession = useAsync(async (req, res, next) => {
     // Call service to create Stripe session
     const sessionUrl = await stripeServices.createStripeSessionService(
       amount,
-      currency,
+      paymentGatewayswithcurrency,
       paymentMethod,
       user,
       selectedGateway,
@@ -98,6 +98,28 @@ exports.deletePurchasedCourse = useAsync(async (req, res, next) => {
         .json(JParser("Purchased course deleted successfully", true));
     } else {
       return res.status(404).json(JParser("Purchased course not found", false));
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+exports.deletesavedaddress = useAsync(async (req, res, next) => {
+  try {
+    const { userId, addressId } = req.params;
+
+    // Call service to delete the deleteAddressService
+    const result = await stripeServices.deleteAddressService(
+      userId,
+      addressId
+    );
+
+    if (result) {
+      return res
+        .status(200)
+        .json(JParser("address deleted successfully", true));
+    } else {
+      return res.status(404).json(JParser("address not found", false));
     }
   } catch (error) {
     next(error);

@@ -7,6 +7,7 @@ const {
   getUserPurchasedCourses,
   deletePurchasedCourse,
   getUserTransactionDetails,
+  deletesavedaddress
 } = require("../controllers/stripe.payment.controller"); // New controller for Stripe
 
 // Route to create a Stripe session for payment
@@ -25,6 +26,12 @@ router.get("/user/:userId/purchased-courses", getUserPurchasedCourses);
 router.delete(
   "/user/:userId/purchased-courses/:courseId",
   deletePurchasedCourse
+);
+
+// New route to delete deleteAddressService by user ID and address ID
+router.delete(
+  "/user/:userId/address/:addressId",
+  deletesavedaddress
 );
 
 // New route to get transaction details by user ID
