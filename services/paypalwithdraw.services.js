@@ -82,6 +82,12 @@ const initiateWithdrawalService = async (amount, userId, paypalEmail) => {
     transactionEntry.paymentStatus = "success";
 
     const CurrentUserBalance = await usersServices.getUserBalanceById(userId);
+    if (
+      CurrentUserBalance <= 0 ||
+      parseFloat(amount) > parseFloat(CurrentUserBalance)
+    ) {
+      throw new Error("Insufficient funds to withdraw");
+    }
 
     const total = parseFloat(CurrentUserBalance) - parseFloat(amount);
 
