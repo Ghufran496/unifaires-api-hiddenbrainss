@@ -1,111 +1,58 @@
-// const fetch = require('node-fetch');
-
-// // Service method for creating a PayPal Payout using node-fetch
-// const initiateWithdrawalService = async (amount, userId, paypalEmail) => {
-//     try {
-//         const paypalApiEndpoint = 'https://api-m.sandbox.paypal.com/v1/payments/payouts'; // Sandbox endpoint
-//         const accessToken = await generateSandboxAccessToken(); // Function to get access token
-
-//         const requestBody = {
-//             sender_batch_header: {
-//                 sender_batch_id: Math.random().toString(36).substring(9), // Unique batch ID
-//                 email_subject: 'Your withdrawal request',
-//                 email_message: `You have requested a withdrawal of ${amount} from your account.`,
-//             },
-//             items: [
-//                 {
-//                     recipient_type: 'EMAIL',
-//                     amount: {
-//                         value: amount.toString(), // Amount as string
-//                         currency: 'USD', //  Assuming USD, make dynamic if needed
-//                     },
-//                     receiver: paypalEmail, // User's PayPal email
-//                     note: 'Withdrawal from your web app wallet',
-//                     sender_item_id: userId.toString(), // User ID as sender item ID
-//                 },
-//             ],
-//         };
-
-//         const response = await fetch(paypalApiEndpoint, {
-//             method: 'POST',
-//             headers: {
-//                 'Content-Type': 'application/json',
-//                 'Authorization': `Bearer ${accessToken}`, // Use access token
-//                 'PayPal-Request-Id': Math.random().toString(36).substring(7), // Optional: Request ID
-//             },
-//             body: JSON.stringify(requestBody),
-//         });
-
-//         const data = await response.json();
-
-//         if (!response.ok) {
-//             console.error("PayPal Payout Error:", data);
-//             throw new Error(`PayPal Payout failed: ${data.message || response.statusText}`);
-//         }
-
-//         return data; // Return the PayPal API response data
-//     } catch (error) {
-//         console.error("Error initiating PayPal withdrawal:", error);
-//         throw new Error("Error initiating PayPal withdrawal");
-//     }
-// };
-
-// // Function to generate a Sandbox Access Token (using Client ID and Secret)
-// async function generateSandboxAccessToken() {
-//     const clientId = process.env.PAYPAL_CLIENT_ID;
-//     const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-//     const authString = Buffer.from(`${clientId}:${clientSecret}`).toString('base64'); // Base64 encode
-
-//     const tokenEndpoint = 'https://api-m.sandbox.paypal.com/v1/oauth2/token';
-
-//     const tokenResponse = await fetch(tokenEndpoint, {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/x-www-form-urlencoded',
-//             'Authorization': `Basic ${authString}`, // Basic Auth
-//         },
-//         body: 'grant_type=client_credentials', // Grant type for client credentials flow
-//     });
-
-//     const tokenData = await tokenResponse.json();
-
-//     if (!tokenResponse.ok) {
-//         console.error("Error getting PayPal Sandbox Access Token:", tokenData);
-//         throw new Error("Failed to obtain PayPal Sandbox Access Token");
-//     }
-
-//     return tokenData.access_token; // Return the access token
-// }
-
-// module.exports = {
-//     initiateWithdrawalService,
-// };
-
 const fetch = require("node-fetch");
+const TransactionDetails = require("../models/transaction.details");
+const usersServices = require("../services/users.services");
 
-// Service method for creating a PayPal Payout using node-fetch
 const initiateWithdrawalService = async (amount, userId, paypalEmail) => {
   try {
+    if (!amount || amount <= 0) {
+      throw new Error(
+        "Invalid withdrawal amount. Amount must be greater than zero."
+      );
+    }
+    if (!userId) {
+      throw new Error("User ID is required to process the withdrawal.");
+    }
+    if (!paypalEmail) {
+      throw new Error("PayPal email is required to process the withdrawal.");
+    }
+
     const paypalApiEndpoint =
-      "https://api-m.sandbox.paypal.com/v1/payments/payouts"; // Sandbox endpoint
-    const accessToken = await generateSandboxAccessToken(); // Function to get access token
+      "https://api-m.sandbox.paypal.com/v1/payments/payouts";
+    const accessToken = await generateSandboxAccessToken();
+    if (!accessToken) {
+      throw new Error("Failed to retrieve PayPal access token.");
+    }
+
+    const transactionEntry = {
+      userId,
+      transactionAmount: amount,
+      transactionType: "withdrawfunds",
+      paymentStatus: "pending",
+      billingAddress: {
+        streetAddress: "PayPal-Withdraw",
+        city: "PayPal-Withdraw",
+        stateProvince: "PayPal-Withdraw",
+        postalCode: "PayPal-Withdraw",
+        country: "PayPal-Withdraw",
+      },
+    };
 
     const requestBody = {
       sender_batch_header: {
-        sender_batch_id: Math.random().toString(36).substring(9), // Unique batch ID
+        sender_batch_id: Math.random().toString(36).substring(9),
         email_subject: "Your withdrawal request",
-        email_message: `You have requested a withdrawal of ${amount} from your account.`,
+        email_message: `You have requested a withdrawal of $${amount}.`,
       },
       items: [
         {
           recipient_type: "EMAIL",
           amount: {
-            value: amount.toString(), // Amount as string
-            currency: "USD", //  Assuming USD, make dynamic if needed
+            value: amount.toString(),
+            currency: "USD",
           },
-          receiver: paypalEmail, // User's PayPal email
+          receiver: paypalEmail,
           note: "Withdrawal from your web app wallet",
-          sender_item_id: userId.toString(), // User ID as sender item ID
+          sender_item_id: userId.toString(),
         },
       ],
     };
@@ -114,8 +61,8 @@ const initiateWithdrawalService = async (amount, userId, paypalEmail) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`, // Use access token
-        "PayPal-Request-Id": Math.random().toString(36).substring(7), // Optional: Request ID
+        Authorization: `Bearer ${accessToken}`,
+        "PayPal-Request-Id": Math.random().toString(36).substring(7),
       },
       body: JSON.stringify(requestBody),
     });
@@ -123,16 +70,45 @@ const initiateWithdrawalService = async (amount, userId, paypalEmail) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("PayPal Payout Error:", data);
+      console.error("PayPal API Error:", data);
       throw new Error(
-        `PayPal Payout failed: ${data.message || response.statusText}`
+        data.message ||
+          `PayPal payout request failed with status ${response.status}`
       );
     }
 
-    return data; // Return the PayPal API response data
+    transactionEntry.transactionId =
+      data.batch_header?.payout_batch_id || "N/A";
+    transactionEntry.paymentStatus = "success";
+
+    const CurrentUserBalance = await usersServices.getUserBalanceById(userId);
+
+    const total = parseFloat(CurrentUserBalance) - parseFloat(amount);
+
+    const update = await usersServices.updateUserBalance(userId, total);
+    if (!update) {
+      console.error("Failed to update balance");
+      return res.status(500).send("Failed to update balance");
+    }
+
+    await TransactionDetails.create(transactionEntry);
+    return data;
   } catch (error) {
-    console.error("Error initiating PayPal withdrawal:", error);
-    throw new Error("Error initiating PayPal withdrawal");
+    await TransactionDetails.create({
+      userId,
+      transactionAmount: amount || 0,
+      transactionType: "withdrawfunds",
+      paymentStatus: "failed",
+      billingAddress: {
+        streetAddress: "PayPal-Withdraw",
+        city: "PayPal-Withdraw",
+        stateProvince: "PayPal-Withdraw",
+        postalCode: "PayPal-Withdraw",
+        country: "PayPal-Withdraw",
+      },
+      errorMessage: error.message,
+    });
+    throw new Error("Error processing PayPal withdrawal: " + error.message);
   }
 };
 

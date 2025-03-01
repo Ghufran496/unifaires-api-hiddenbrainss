@@ -2,6 +2,7 @@ const { useAsync } = require("../core");
 const { JParser } = require("../core").utils;
 const paypalServices = require("../services/paypalwithdraw.services"); // Import PayPal services
 
+
 // Initiate PayPal Withdrawal
 exports.initiateWithdrawal = useAsync(async (req, res, next) => {
     try {
@@ -41,14 +42,14 @@ exports.getPayPalClientId = useAsync(async (req, res, next) => {
 
 
 // controllers/paypal.webhook.controller.js
-const paypalWebhookServices = require("../services/paypal.webhook.service"); // Import webhook services
+// const paypalWebhookServices = require("../services/paypal.webhook.service"); // Import webhook services
 
 exports.handlePaypalWebhook = async (req, res) => {
     let event;
 
     // 1. **Verify PayPal Webhook Signature:**
     try {
-        const paypalSignatureVerificationResult = await paypalWebhookServices.verifyPaypalWebhookSignature(
+        const paypalSignatureVerificationResult = await paypalServices.verifyPaypalWebhookSignature(
             req.headers,
             req.rawBody,
             process.env.PAYPAL_WEBHOOK_SECRET
@@ -75,11 +76,11 @@ exports.handlePaypalWebhook = async (req, res) => {
     try {
         switch (event.event_type) {
             case "PAYOUTSBATCH.PAYMENT.COMPLETED":
-                await paypalWebhookServices.handlePayoutBatchCompleted(event);
+                await paypalServices.handlePayoutBatchCompleted(event);
                 break;
 
             case "PAYOUTSBATCH.PAYMENT.DENIED":
-                await paypalWebhookServices.handlePayoutBatchDenied(event);
+                await paypalServices.handlePayoutBatchDenied(event);
                 break;
 
             // ... Handle other relevant payout event types ...
