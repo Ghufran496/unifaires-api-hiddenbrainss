@@ -143,6 +143,8 @@ module.exports = function (app) {
   const earnings = require("../routes/earnings.routes");
 
   const stripePaymentRoutes = require("../routes/stripe.payment.routes");
+  const paypalWithdrawRoutes = require("../routes/paypalwithdraw.payment.route");
+
   /**
    * list of routes
    */
@@ -155,6 +157,7 @@ module.exports = function (app) {
 
   //CoursePayment Route
   app.use("/api/v1/payment", stripePaymentRoutes);
+  app.use("/api/v1/paypal", paypalWithdrawRoutes);
 
   //countries states and cities
   ///api/v1/csc -- gets countries
