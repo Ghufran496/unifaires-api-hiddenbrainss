@@ -391,7 +391,7 @@ exports.update_balance = useAsync(async (req, res, next) => {
   }
 });
 exports.update_balance_by_email = useAsync(async (req, res, next) => {
-  const { userId, email, amount } = req.body;
+  const { userId, email, amount, amountToBeTransferred } = req.body;
   const billingAddress = {
     streetAddress: "Send By Email",
     city: "Send By Email",
@@ -424,7 +424,8 @@ exports.update_balance_by_email = useAsync(async (req, res, next) => {
         .json(JParser("Current User not found", false, null));
     }
     const SendUserBalance =
-      parseFloat(sendUser.dataValues.balance) + parseFloat(amount);
+      parseFloat(sendUser.dataValues.balance) +
+      parseFloat(amountToBeTransferred);
     console.log(SendUserBalance, "SendUserBalance");
     const CurrentUserAmount =
       parseFloat(currentUser.dataValues.balance) - parseFloat(amount);

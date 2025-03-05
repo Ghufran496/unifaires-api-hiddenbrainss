@@ -2,7 +2,12 @@ const fetch = require("node-fetch");
 const TransactionDetails = require("../models/transaction.details");
 const usersServices = require("../services/users.services");
 
-const initiateWithdrawalService = async (amount, userId, paypalEmail) => {
+const initiateWithdrawalService = async (
+  amount,
+  userId,
+  paypalEmail,
+  amounttobededucted
+) => {
   try {
     if (!amount || amount <= 0) {
       throw new Error(
@@ -25,7 +30,7 @@ const initiateWithdrawalService = async (amount, userId, paypalEmail) => {
 
     const transactionEntry = {
       userId,
-      transactionAmount: amount,
+      transactionAmount: amounttobededucted,
       transactionType: "withdrawfunds",
       paymentStatus: "pending",
       billingAddress: {
@@ -84,12 +89,13 @@ const initiateWithdrawalService = async (amount, userId, paypalEmail) => {
     const CurrentUserBalance = await usersServices.getUserBalanceById(userId);
     if (
       CurrentUserBalance <= 0 ||
-      parseFloat(amount) > parseFloat(CurrentUserBalance)
+      parseFloat(amounttobededucted) > parseFloat(CurrentUserBalance)
     ) {
       throw new Error("Insufficient funds to withdraw");
     }
 
-    const total = parseFloat(CurrentUserBalance) - parseFloat(amount);
+    const total =
+      parseFloat(CurrentUserBalance) - parseFloat(amounttobededucted);
 
     const update = await usersServices.updateUserBalance(userId, total);
     if (!update) {
