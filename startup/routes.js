@@ -144,6 +144,7 @@ module.exports = function (app) {
 
   const stripePaymentRoutes = require("../routes/stripe.payment.routes");
   const paypalWithdrawRoutes = require("../routes/paypalwithdraw.payment.route");
+  const flutterwavePaymentRoutes = require("../routes/flutterwave.payment.routes");
 
   /**
    * list of routes
@@ -158,6 +159,8 @@ module.exports = function (app) {
   //CoursePayment Route
   app.use("/api/v1/payment", stripePaymentRoutes);
   app.use("/api/v1/paypal", paypalWithdrawRoutes);
+  app.use("/api/v1/flutterwave", flutterwavePaymentRoutes);
+
 
   //countries states and cities
   ///api/v1/csc -- gets countries

@@ -9,6 +9,7 @@ const createStripeSessionService = async (
   paymentGatewayswithcurrency,
   paymentMethod,
   user,
+  calculatedAmount,
   selectedGateway,
   redirectUrl,
   courseId,
@@ -31,7 +32,8 @@ const createStripeSessionService = async (
         : bankPaymentMethods[paymentGatewayswithcurrency?.bank];
 
     console.log("allowedMethods", allowedMethods);
-
+  // Ensure amount is in the smallest currency unit
+  const amountInSmallestUnit = Math.round(calculatedAmount * 100);
     const transactionDetailsString = JSON.stringify(transactionDetails);
     const session = await stripe.checkout.sessions.create({
       payment_method_types: allowedMethods,
@@ -42,7 +44,7 @@ const createStripeSessionService = async (
             product_data: {
               name: "Course Payment",
             },
-            unit_amount: amount * 100,
+            unit_amount: amountInSmallestUnit,
           },
           quantity: 1,
         },

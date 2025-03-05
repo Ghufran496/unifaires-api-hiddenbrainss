@@ -11,6 +11,7 @@ exports.createStripeSession = useAsync(async (req, res, next) => {
   try {
     const {
       amount,
+      calculatedAmount,
       paymentGatewayswithcurrency,
       paymentMethod,
       user,
@@ -28,6 +29,7 @@ exports.createStripeSession = useAsync(async (req, res, next) => {
       paymentGatewayswithcurrency,
       paymentMethod,
       user,
+      calculatedAmount,
       selectedGateway,
       redirectUrl,
       courseId,
