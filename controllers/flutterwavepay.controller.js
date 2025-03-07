@@ -64,3 +64,35 @@ exports.verifyFlutterwaveTransaction = useAsync(async (req, res, next) => {
     next(error);
   }
 });
+
+exports.fetchBanks = useAsync(async (req, res, next) => {
+  try {
+    const { countryCode } = req.params;
+    const banks = await flutterwaveServices.fetchBanksService(countryCode);
+    res.status(200).json(JParser("Banks fetched successfully", true, banks));
+  } catch (error) {
+    next(error);
+  }
+});
+
+exports.initiateWithdrawal = useAsync(async (req, res, next) => {
+  try {
+    const { userId, amount, currency, bankCode, accountNumber,amountToBeTransferred } = req.body;
+
+    // Initiate withdrawal
+    const withdrawal = await flutterwaveServices.initiateFlutterwaveWithdrawal(
+      userId,
+      bankCode,
+      accountNumber,
+      amount,
+      currency,
+      amountToBeTransferred
+    );
+
+    return res
+      .status(200)
+      .json(JParser("Withdrawal initiated successfully", true, { withdrawal }));
+  } catch (error) {
+    next(error);
+  }
+});
